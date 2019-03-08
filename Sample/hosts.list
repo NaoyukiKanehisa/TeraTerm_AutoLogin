@@ -1,0 +1,5 @@
+#ホスト名,IPアドレス,TERATERM.INIファイル名,プロトコル(Telnet/SSH),ポート番号,ログインユーザ名,SSH認証方式(publickey_passphrase/publickey_nopassphrase/challengeresponse),公開鍵認証プライベートキーのパス,グループ名
+Host1,192.168.0.1,TERATERM.INI,SSH,22,root,,,Group1
+Host2,192.168.0.2,TERATERM2.INI,SSH,22,root,publickey_passphrase,id_rsa,Group1
+Host3,192.168.0.3,TERATERM3.INI,SSH,22,root,challengeresponse,,Group1
+Host4,192.168.0.4,TERATERM4.INI,Telnet,23,root,,,Group1
