@@ -1,6 +1,0 @@
-#ホスト名,IPアドレス,TERATERM.INIファイル名,プロトコル(Telnet/SSH),ポート番号,ログインユーザ名,SSH認証方式(publickey_passphrase/publickey_nopassphrase/challengeresponse),公開鍵認証プライベートキーのパス,グループ名
-dns01,192.168.0.161,TERATERM.INI,SSH,22,root,,,Group1
-esx,192.168.0.3,,SSH,22,root,challengeresponse,,Group1
-cisco_telnet,172.16.0.1,TERATERM.INI,SSH,22,cisco,,,Group1
-OracleDB_12c,192.168.0.150,TERATERM4.INI,SSH,22,oracle,publickey_passphrase,oracledb\id_rsa,Group1
-testrsa,192.168.0.50,TERATERM.INI,SSH,22,oracle,publickey_nopassphrase,testrsa\id_rsa,Group1
