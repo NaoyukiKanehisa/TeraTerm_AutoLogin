@@ -1,0 +1,541 @@
+;;-------------------------------------------------------------------------------------------------
+;; カスタム設定 (ファイル/フォルダのパスは絶対パスか、TTLファイルからの相対パス表記で指定)
+;;-------------------------------------------------------------------------------------------------
+;; ホストリストファイル名 (必須)
+HOST_FILE              = "Sample\hosts.list"
+
+;; ログフォルダのパス (書式はstrftime形式の書式が使用可能。接続ホスト名は $HOSTNAME を指定すると置換される作り)
+;; ※ フォルダが無い場合は自動的に作成する
+;; ※ ログを保存しない場合は空白 '' を設定する
+LOG_DIR_PATH           = "logs\%Y%m%d\$HOSTNAME"
+
+;; ログファイル名の指定 (書式はstrftime形式の書式が使用可能。接続ホスト名は $HOSTNAME を指定すると置換される作り)
+LOG_FILENAME           = "$HOSTNAME_&h_%Y%m%d-%H%M%S.log"
+
+;; カスタムINIファイルが格納されているフォルダのパス
+INI_DIR_PATH           = "ini"
+
+;; デフォルトINIファイルのパス
+;; ※ ホストリストファイルでカスタムINIファイルの指定がない場合か、該当のINIファイルが見つからない場合に読み込む
+DEFAULT_INI            = "%PROGRAMFILES%\teraterm\TERATERM.INI"
+
+;; パスワードファイルの格納パス
+PASSWDFILE_DIR_PATH    = "passwdfile"
+
+;; SSH鍵の格納パス
+SSHKEY_DIR_PATH        = "SSH_KEY"
+
+;; デフォルトのコマンドリストファイル名
+;; ※ 使わない場合はブランク '' を設定する
+;; ※ コマンドライン引数の値が優先される
+COMMAND_FILE           = "Sample\command.list"
+
+;; ログインユーザのデフォルト
+;; ※ ホストリストファイルでログインユーザ名の指定がない場合にこのアカウントを使用してログインを試みる
+DEFAULT_LOGIN_USER     = "root"
+
+;; Tera Term 端末画面の表示位置 ※on/offで指定
+;; 横: DISPLAY_POSITION_X / 縦: DISPLAY_POSITION_Y
+ADJUST_DISPLAY_POSITION = "off"
+DISPLAY_POSITION_X     = "0"
+DISPLAY_POSITION_Y     = "0"
+
+;;-------------------------------------------------------------------------------------------------
+;; ディレクトリ情報の定義
+;;-------------------------------------------------------------------------------------------------
+;; カレントディレクトリを取得する
+getdir WORKDIR
+
+;; ホストリストファイルの絶対パスを取得する (相対パスの場合)
+expandenv HOST_FILE
+strscan HOST_FILE '\'
+UNCPATH_CHK = result
+strscan HOST_FILE ':'
+if (result <> 2) & (UNCPATH_CHK <> 1) then
+    makepath HOST_FILE WORKDIR HOST_FILE
+endif
+
+;; ログディレクトリの絶対パスを取得する (相対パスの場合)
+if paramcnt >= 5 then
+    strcompare params[6] ''
+endif
+expandenv LOG_DIR_PATH
+strscan LOG_DIR_PATH '\'
+UNCPATH_CHK = result
+strcompare LOG_DIR_PATH ''
+LOG_DIR_CHKBLANK = result
+strscan LOG_DIR_PATH ':'
+if (result <> 2) & (UNCPATH_CHK <> 1) & (LOG_DIR_CHKBLANK <> 0) then
+    makepath LOG_DIR_PATH WORKDIR LOG_DIR_PATH
+endif
+
+;; INIファイルディレクトリの絶対パスを取得する (相対パスの場合)
+expandenv INI_DIR_PATH
+strscan INI_DIR_PATH '\'
+UNCPATH_CHK = result
+strscan INI_DIR_PATH ':'
+if (result <> 2) & (UNCPATH_CHK <> 1) then
+    makepath INI_DIR_PATH WORKDIR INI_DIR_PATH
+endif
+
+;; パスワードファイルディレクトリの絶対パスを取得する (相対パスの場合)
+expandenv PASSWDFILE_DIR_PATH
+strscan PASSWDFILE_DIR_PATH '\'
+UNCPATH_CHK = result
+strscan PASSWDFILE_DIR_PATH ':'
+if (result <> 2) & (UNCPATH_CHK <> 1) then
+    makepath PASSWDFILE_DIR_PATH WORKDIR PASSWDFILE_DIR_PATH
+endif
+
+;;-------------------------------------------------------------------------------------------------
+;; ホスト選択画面を作成する
+;;-------------------------------------------------------------------------------------------------
+size = 0
+filestat HOST_FILE size
+if (size == 0) | (size == 0 && result == 0) then
+    messagebox 'ホストリストファイルが見つかりません。' 'エラー'
+    end
+endif
+
+;; ホストファイルの行数を取得する
+fileopen HOST_LIST HOST_FILE 0
+i = 0
+while
+   filereadln HOST_LIST LIST_LINE
+
+   ;; ファイル読み込みの終了処理
+   if result = 1 break
+
+   ;; 空白行を無視する
+   strlen LIST_LINE
+   if result = 0 continue
+
+   ;; 「#」から始まる行をコメントとして無視
+   strmatch LIST_LINE '^#'
+   if result <> 0 continue
+
+   ;;配列の要素数を計測する
+   strsplit LIST_LINE ','
+   if paramcnt >= 3 then
+       strcompare params[3] ''
+       PARAMS3_CHKBLANK = result
+       strcompare params[3] groupmatchstr9
+       if (result = 0) | (PARAMS3_CHKBLANK = 0) then
+           i = i + 1
+       endif
+   else
+       i = i + 1
+   endif
+endwhile
+fileclose HOST_LIST
+
+if i = 0 then
+    sprintf '%s' 'ホスト選択画面を表示することができません。\n次の理由でホスト選択画面の表示に失敗することがあります。\n\n  ・ホストリストファイルの記述が空。\n  ・ホストリストファイルが排他制御されている。\n  ・コマンドラインで指定したグループに一致するホストが存在しない。'
+    strspecial inputstr
+    messagebox inputstr 'エラー'
+    end
+endif
+
+;; 配列を作成
+strdim HOST_NAME i
+strdim HOST_IP i
+strdim HOST_INI i
+strdim HOST_PROTOCOL i
+strdim HOST_PORT i
+strdim HOST_LOGIN_USER i
+strdim SSH_AUTHENTICATION_TYPE i
+strdim SSH_PRIVATEKEY_PATH i
+
+;; ホストに関する情報をホストファイルから取得する
+fileopen HOST_LIST HOST_FILE 0
+i = 0
+while
+   filereadln HOST_LIST LIST_LINE
+
+   ;; ファイル読み込みの終了処理
+   if result = 1 break
+
+   ;; 空白行を無視する
+   strlen LIST_LINE
+   if result = 0 continue
+
+   ;; 「#」から始まる行をコメントとして無視
+   strmatch LIST_LINE '^#'
+   if result <> 0 continue
+
+   ;;ホストに関する情報を各変数へ代入する
+   strsplit LIST_LINE ','
+   if paramcnt >= 3 then
+       strcompare params[3] groupmatchstr9
+       if (result = 0) | (PARAMS3_CHKBLANK = 0) then
+           goto label_0
+       endif
+   else
+       :label_0
+       HOST_NAME[i]                  = groupmatchstr1
+       HOST_IP[i]                    = groupmatchstr2
+       HOST_INI[i]                   = groupmatchstr3
+       HOST_PROTOCOL[i]              = groupmatchstr4
+       HOST_PORT[i]                  = groupmatchstr5
+       HOST_LOGIN_USER[i]            = groupmatchstr6
+       SSH_AUTHENTICATION_TYPE[i]    = groupmatchstr7
+       SSH_PRIVATEKEY_PATH[i]        = groupmatchstr8
+       i = i + 1
+   endif
+endwhile
+fileclose HOST_LIST
+
+;; ホスト選択画面を表示させる
+if paramcnt >= 3 then
+    if PARAMS3_CHKBLANK <> 0 then
+        sprintf '【%s】%s' params[3] 'ホスト選択'
+        listbox 'ログインするホストを選択してください' inputstr HOST_NAME
+    else
+        listbox 'ログインするホストを選択してください' 'ホスト選択' HOST_NAME
+    endif
+else
+    listbox 'ログインするホストを選択してください' 'ホスト選択' HOST_NAME
+endif
+
+;;-------------------------------------------------------------------------------------------------
+;; 選択されたホストにログインを行う
+;;-------------------------------------------------------------------------------------------------
+;; ホスト選択画面で選択されたホストの情報を変数に代入する
+if result >= 0 then
+    CONNECT_NAME                    = HOST_NAME[result]
+    CONNECT_IP                      = HOST_IP[result]
+    CONNECT_INI                     = HOST_INI[result]
+    CONNECT_PROTOCOL                = HOST_PROTOCOL[result]
+    CONNECT_PORT                    = HOST_PORT[result]
+    CONNECT_LOGIN_USER              = HOST_LOGIN_USER[result]
+    CONNECT_SSH_AUTHENTICATION_TYPE = SSH_AUTHENTICATION_TYPE[result]
+    CONNECT_SSH_PRIVATEKEY_PATH     = SSH_PRIVATEKEY_PATH[result]
+else
+    end
+endif
+
+;; ホスト画面で選択されたホストのログインユーザー設定をチェックし、値が空の場合はデフォルトのログインユーザに設定する。
+strcompare CONNECT_LOGIN_USER ''
+if result = 0 then
+    CONNECT_LOGIN_USER = DEFAULT_LOGIN_USER
+endif
+
+;; 選択されたホストのログインユーザの指定がない場合、強制終了
+strcompare CONNECT_LOGIN_USER ''
+if result = 0 then
+    sprintf '%s\n\n%s  %s' '選択されたホストのログインユーザが指定されていません。' '選択されたホスト：' CONNECT_NAME
+    strspecial inputstr
+    messagebox inputstr 'エラー'
+    end
+endif
+
+;; カスタムINIファイルのパス結合
+strscan CONNECT_INI '\'
+UNCPATH_CHK = result
+strscan CONNECT_INI ':'
+if (result == 0) && (UNCPATH_CHK == 0) then
+    makepath INI_FILE_PATH INI_DIR_PATH CONNECT_INI
+else
+    INI_FILE_PATH = CONNECT_INI
+endif
+
+;; カスタムINIファイルの存在チェック (無い場合はデフォルトINIに読み込み対象を差し替える)
+size = 0
+filestat INI_FILE_PATH size
+if (size == 0) | (size == 0 && result == 0) then
+    ;; デフォルトINIファイルの絶対パスを取得する (相対パスの場合)
+    expandenv DEFAULT_INI
+    strscan DEFAULT_INI '\'
+    UNCPATH_CHK = result
+    strscan DEFAULT_INI ':'
+    if (result <> 2) & (UNCPATH_CHK <> 1) then
+        makepath DEFAULT_INI WORKDIR DEFAULT_INI
+    endif
+    INI_FILE_PATH = DEFAULT_INI
+endif
+
+;; INIファイルが見つからない場合、警告を表示
+size = 0
+filestat INI_FILE_PATH size
+if (size == 0) | (size == 0 && result == 0) then
+    messagebox 'INIファイルが見つかりません。' '警告'
+endif
+
+;; パスワード取得
+strmatch CONNECT_PROTOCOL "(?i:ssh)"
+USESSH = result
+strmatch CONNECT_SSH_AUTHENTICATION_TYPE "(?i:publickey_passphrase)"
+USEPUBLICKEY_PASSPHRASE = result
+strmatch CONNECT_SSH_AUTHENTICATION_TYPE "(?i:publickey_nopassphrase)"
+USEPUBLICKEY_NOPASSPHRASE = result
+if (USESSH > 0) & (USEPUBLICKEY_PASSPHRASE > 0) then
+    sprintf2 title 'Enter Passphrase'
+    sprintf2 MSG 'SSH秘密鍵のパスフレーズを入力してください\n\nログインユーザー：  %s' CONNECT_LOGIN_USER
+elseif (USESSH > 0) & (USEPUBLICKEY_NOPASSPHRASE > 0) then
+else
+    sprintf2 title 'Enter Password'
+    sprintf2 MSG 'パスワードを入力してください\n\nログインユーザー：  %s' CONNECT_LOGIN_USER
+endif
+
+if (USEPUBLICKEY_NOPASSPHRASE <> 1) then
+    sprintf '%s_%s.dat' CONNECT_NAME CONNECT_IP
+    makepath PASSWDFILE_PATH PASSWDFILE_DIR_PATH inputstr
+    foldercreate PASSWDFILE_DIR_PATH
+    size = 0
+    filestat PASSWDFILE_PATH size
+    if (size == 0) | (size == 0 && result == 0) then
+        strspecial MSG
+        while
+            passwordbox MSG title
+            strcompare inputstr ''
+            if (result <> 0) then
+                PASSWORD = inputstr
+                setpassword PASSWDFILE_PATH CONNECT_LOGIN_USER PASSWORD
+                break
+            endif
+            if (USESSH > 0) & (USEPUBLICKEY_PASSPHRASE > 0) then
+                sprintf "パスフレーズ入力無しでログインしますか？\n\nはい： パスフレーズ入力無しでログインする ※パスワードファイルは作成されません。\nいいえ： もう一度パスフレーズを入力する"
+            else
+                sprintf "パスワード入力無しでログインしますか？\n\nはい： パスワード入力無しでログインする ※パスワードファイルは作成されません。\nいいえ： もう一度パスワードを入力する"
+            endif
+            strspecial inputstr
+            yesnobox inputstr '確認' 1
+            if result <> 0 then
+                break
+            endif
+        endwhile
+    else
+        getpassword PASSWDFILE_PATH CONNECT_LOGIN_USER PASSWORD
+    endif
+endif
+
+;; Telnet、またはSSH接続コマンドを作成する
+if (USESSH > 0) then
+    strreplace PASSWORD 1 '"' '""'
+    if (USEPUBLICKEY_PASSPHRASE > 0) | (USEPUBLICKEY_NOPASSPHRASE > 0)then
+        strscan CONNECT_SSH_PRIVATEKEY_PATH '\'
+        UNCPATH_CHK = result
+        strscan CONNECT_SSH_PRIVATEKEY_PATH ':'
+        if (result <> 2) & (UNCPATH_CHK <> 1) then
+            expandenv SSHKEY_DIR_PATH
+            makepath CONNECT_SSH_PRIVATEKEY_PATH SSHKEY_DIR_PATH CONNECT_SSH_PRIVATEKEY_PATH
+            strscan CONNECT_SSH_PRIVATEKEY_PATH '\'
+            UNCPATH_CHK = result
+            strscan CONNECT_SSH_PRIVATEKEY_PATH ':'
+            if (result <> 2) & (UNCPATH_CHK <> 1) then
+                makepath CONNECT_SSH_PRIVATEKEY_PATH WORKDIR CONNECT_SSH_PRIVATEKEY_PATH
+            endif
+        endif
+        sprintf '%s:%s /F="%s" /ssh /2 /auth="publickey" /user="%s" /passwd="%s" /keyfile="%s"' CONNECT_IP CONNECT_PORT INI_FILE_PATH CONNECT_LOGIN_USER PASSWORD CONNECT_SSH_PRIVATEKEY_PATH
+    else
+        strmatch CONNECT_SSH_AUTHENTICATION_TYPE "(?i:challengeresponse)"
+        if (result > 0) then
+            sprintf '%s:%s /ssh /2 /auth="challenge" /user="%s" /passwd="%s" /F="%s"' CONNECT_IP CONNECT_PORT CONNECT_LOGIN_USER PASSWORD INI_FILE_PATH
+        else
+            sprintf '%s:%s /ssh /2 /auth="password" /user="%s" /passwd="%s" /F="%s"' CONNECT_IP CONNECT_PORT CONNECT_LOGIN_USER PASSWORD INI_FILE_PATH
+        endif
+    endif
+else
+    sprintf '%s:%s /F="%s" /nossh /T=1' CONNECT_IP CONNECT_PORT INI_FILE_PATH
+endif
+
+;; Telnet、またはSSH接続を行う
+connect inputstr
+
+; 接続出来ない場合はメッセージを表示し終了
+if result <> 2 then
+    messagebox '接続できませんでした。' '接続エラー'
+    end
+endif
+
+;; (Telnetの場合)自動ログイン処理
+strmatch CONNECT_PROTOCOL "(?i:telnet)"
+if (result > 0) then
+    wait '$' '#' ']' '>' ':'
+    sendln CONNECT_LOGIN_USER
+    recvln
+    sendln PASSWORD
+endif
+
+;; Tera Term 端末画面の表示位置を調節する
+strmatch ADJUST_DISPLAY_POSITION "(?i:on)"
+if result > 0 then
+    str2int X DISPLAY_POSITION_X
+    str2int Y DISPLAY_POSITION_Y
+    sprintf #$1b"[3;%d;%dt" X Y
+    dispstr inputstr
+endif
+
+;;-------------------------------------------------------------------------------------------------
+;; ログの記録を開始する
+;;-------------------------------------------------------------------------------------------------
+if paramcnt >= 3 then
+    strmatch params[4] "(?i:on)"
+else
+    result = 1
+endif
+if (LOG_DIR_CHKBLANK == 1) && (result == 1) then
+
+    ;; ログフォーマットに準じて日付や時刻情報などを取得し、ログ名を生成する
+    gettime LOG_NAME LOG_FILENAME
+    strreplace LOG_NAME 1 '\$HOSTNAME' CONNECT_NAME
+
+    ;; ログを出力するフォルダを再帰的に作成する
+    getdate LOG_DIR_PATH LOG_DIR_PATH
+    strreplace LOG_DIR_PATH 1 '\$HOSTNAME' CONNECT_NAME
+    LOG_DIR_PATH_2 = LOG_DIR_PATH
+    strscan LOG_DIR_PATH_2 '\'
+    UNCPATH_CHK = result
+    MAKE_LOG_DIR = ""
+    x = 10
+    do while x > 9
+        strsplit LOG_DIR_PATH_2 '\'
+        x = result
+        if (x < 10) then
+            j = x
+        else
+            j = 9
+        endif
+        strlen MAKE_LOG_DIR
+        y = result
+        for i 1 j
+            if (i = 1) & (y = 0) then
+                sprintf 'MAKE_LOG_DIR = groupmatchstr%d' i
+            else
+                sprintf 'makepath MAKE_LOG_DIR MAKE_LOG_DIR groupmatchstr%d' i
+            endif
+            execcmnd inputstr
+            if (UNCPATH_CHK = 1) then
+                if (i = 3) & (y = 0) then
+                    sprintf2 MAKE_LOG_DIR '\%s' MAKE_LOG_DIR
+                endif
+            endif
+            strlen MAKE_LOG_DIR
+            if (result > 2) then
+                foldercreate MAKE_LOG_DIR
+            endif
+        next
+        strlen MAKE_LOG_DIR
+        CHAR_COUNT = result
+        strcopy LOG_DIR_PATH 1 (CHAR_COUNT + 1) TEMP_PATH
+        strlen TEMP_PATH
+        strcopy LOG_DIR_PATH (result + 1) result TEMP_PATH2
+        strconcat TEMP_PATH TEMP_PATH2
+        LOG_DIR_PATH_2 = TEMP_PATH
+        strlen LOG_DIR_PATH_2
+        if (CHAR_COUNT < result) then
+            strremove LOG_DIR_PATH_2 1 (CHAR_COUNT + 1)
+        endif
+    loop
+    ;; 自動ログ取得設定が有効で既にログが記録中の場合、ログの記録を停止する
+    logclose
+
+    ;; ログの記録を開始する
+    makepath LOG_PATH LOG_DIR_PATH LOG_NAME
+    if paramcnt >= 4 then
+        strmatch params[5] "(?i:on)"
+    else
+        result = 0
+    endif
+    if (result == 1) then
+        logopen LOG_PATH 0 1 1 1
+    else
+        logopen LOG_PATH 0 1 1 0
+    endif
+
+    if result = 1 then
+        sprintf 'Tera Term のログファイル書き込みに失敗しました。\n設定を確認してください。'
+        strspecial inputstr
+        messagebox inputstr 'エラー'
+    endif
+endif
+
+;;-------------------------------------------------------------------------------------------------
+;; コマンドリストの内容を実行
+;;-------------------------------------------------------------------------------------------------
+;; コマンドラインの引数でコマンドリストが指定されている場合、値を上書きする
+if paramcnt >= 2 then
+    strcompare params[2] ''
+    if result <> 0 then
+        strscan params[2] '\'
+        UNCPATH_CHK = result
+        strscan params[2] ':'
+        if ((result = 2) | (UNCPATH_CHK = 1)) then
+            COMMAND_FILE = params[2]
+        else
+            makepath COMMAND_FILE WORKDIR params[2]
+        endif
+    endif
+endif
+
+;;コマンドリストファイルが何も指定されていない場合、スキップする
+strcompare COMMAND_FILE ''
+if (result <> 0) then
+    size = 0
+    filestat COMMAND_FILE size
+    if  (size == 0 && result == 0) then
+        COMMAND_FILE = ''
+    endif
+endif
+strcompare COMMAND_FILE ''
+if (result <> 0) then
+
+    ;; 30秒以内にプロンプトが表示されない場合終了
+    timeout = 30
+    wait '$' '#' ']' '>'
+    if result = 0 then
+       disconnect
+       end
+    endif
+
+    ;; 絶対パスを取得する (相対パスの場合)
+    expandenv COMMAND_FILE
+    strscan COMMAND_FILE '\'
+    UNCPATH_CHK = result
+    strscan COMMAND_FILE ':'
+    if (result <> 2) & (UNCPATH_CHK <> 1) then
+        makepath COMMAND_FILE WORKDIR COMMAND_FILE
+    endif
+
+    ;; コマンドリストファイルが無い場合、エラー
+    getfileattr COMMAND_FILE
+    if (result < 0) then
+        messagebox 'コマンドリストファイルが開けません。' 'エラー'
+        end
+    endif
+
+    fileopen COMMAND_LIST COMMAND_FILE 0
+
+    ;; 同期モードに設定
+    setsync 1
+
+    while 1
+        ;; コマンドリストを一行ずつ読み取る
+        filereadln COMMAND_LIST COMMAND_LIST_LINE
+        if result = 1 break
+
+        ;; 空白行を無視する
+        strlen COMMAND_LIST_LINE
+        if result = 0 continue
+
+        ;; 「#」から始まる行をコメントとして無視
+        strmatch COMMAND_LIST_LINE '^#'
+        if result <> 0 continue
+
+        ;; 一行ずつコマンドを実行
+        flushrecv
+        sendln COMMAND_LIST_LINE
+        recvln
+        wait '$' '#' ']' '>'
+    endwhile
+    fileclose COMMAND_LIST
+
+    ;; 非同期モードに戻す
+    setsync 0
+endif
+
+;;-------------------------------------------------------------------------------------------------
+;; 終了
+;;-------------------------------------------------------------------------------------------------
+;; マクロ終了
+end
