@@ -112,7 +112,7 @@ Group1.vbs内で`COMMANDLIST`オプションにコマンドファイルのパス
 
 |オプションの名称|説明|
 |:---|:---|
-|TTPMACROPATH|Tera Termの本体内にある ttpmacro.exe のパスを指定します。<br>(相対パスは`Group1.vbs`を起点にします。)|
+|TTPMACROPATH|Tera Termの本体内にある`ttpmacro.exe`のパスを指定します。<br>(相対パスは`Group1.vbs`を起点にします。)|
 |TTLFILEPATH|AutoLogin.ttlのパスを指定します。<br>(相対パスは`Group1.vbs`を起点にします。)|
 |COMMANDLIST|`command.list`のファイル名を含めたパスを記述します。<br>(相対パスは`Group1.vbs`を起点にします。)<br>`Group1.vbs`からマクロを実行した場合、`AutoLogin.ttl`内の`COMMAND_FILE`オプションの設定は無視されます。<br>コマンドファイルの自動実行を行わない場合、空白 "" を指定します。|
 |GROUP|hosts.listの列9で定義したグループに対応し、グループ名が一致するホストのみを接続ホストの選択画面で表示することができます。|
