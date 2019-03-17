@@ -451,20 +451,17 @@ if paramcnt >= 2 then
     COMMAND_FILE = params[2]
 endif
 
-;;コマンドリストファイルが見つからない場合、エラー表示して終了する
+;;コマンドリストファイルが何も指定されていない場合、スキップする
 strcompare COMMAND_FILE ''
 if (result <> 0) then
+
+    ;;コマンドリストファイルが見つからない場合、エラー表示して終了する
     size = 0
     filestat COMMAND_FILE size
     if  (size == 0) then
         messagebox 'コマンドリストファイルが開けません。' 'エラー'
         end
     endif
-endif
-
-;;コマンドリストファイルが何も指定されていない場合、スキップする
-strcompare COMMAND_FILE ''
-if (result <> 0) then
 
     ;; 30秒以内にプロンプトが表示されない場合終了
     timeout = 30
