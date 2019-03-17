@@ -462,8 +462,8 @@ if (result <> 0) then
     size = 0
     filestat COMMAND_FILE size
     if  (size == 0) then
-            messagebox 'コマンドリストファイルが開けません。' 'エラー'
-            end
+        messagebox 'コマンドリストファイルが開けません。' 'エラー'
+        end
     endif
 endif
 
