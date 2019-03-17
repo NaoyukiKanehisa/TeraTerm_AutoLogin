@@ -58,7 +58,7 @@ Tera Termのバージョンは出来るだけ新しいものを利用するの�
     * TTLの拡張子に`ttpmacro.exe`を関連付けて実行する。
     * Tera Termのメニューから、[コントロール] - [マクロ]を選択し、ファイル選択ダイアログで`AutoLogin.ttl`ファイルを選択する。
     * `ttpmacro.exe`を直接起動し、ファイル選択ダイアログで`AutoLogin.ttl`ファイルを選択する。
-    * `Group1.vbs`を実行し、マクロを実行する。
+    * `Group1.vbs`を実行し、マクロを実行する。<br>※ファイル内の`TTPMACROPATH`オプションと`TTLFILEPATH`オプションで、`ttpmacro.exe`と`AutoLogin.ttl`の正しいパスが記述されている必要があります。
 
 ### ファイルの詳細、オプションの説明
 **AutoLogin.ttl**<br>
@@ -113,8 +113,8 @@ Group1.vbs内で`COMMANDLIST`オプションにコマンドファイルのパス
 |オプションの名称|説明|
 |:---|:---|
 |TTPMACROPATH|Tera Termの本体内にある`ttpmacro.exe`のパスを指定します。<br>(相対パスは`Group1.vbs`を起点にします。)|
-|TTLFILEPATH|AutoLogin.ttlのパスを指定します。<br>(相対パスは`Group1.vbs`を起点にします。)|
-|COMMANDLIST|`command.list`のファイル名を含めたパスを記述します。<br>(相対パスは`Group1.vbs`を起点にします。)<br>`Group1.vbs`からマクロを実行した場合、`AutoLogin.ttl`内の`COMMAND_FILE`オプションの設定は無視されます。<br>コマンドファイルの自動実行を行わない場合、空白 "" を指定します。|
+|TTLFILEPATH|`AutoLogin.ttl`のパスを指定します。<br>(相対パスは`Group1.vbs`を起点にします。)|
+|COMMANDLIST|`command.list`のファイル名を含めたパスを記述します。<br>(相対パスは`Group1.vbs`を起点にします。)<br>`Group1.vbs`からマクロを実行した場合、`AutoLogin.ttl`内の`COMMAND_FILE`オプションの設定は無視されます。<br>コマンドファイルの自動実行を行わない場合、空白`""`を指定します。|
 |GROUP|hosts.listの列9で定義したグループに対応し、グループ名が一致するホストのみを接続ホストの選択画面で表示することができます。|
 |LOG_AUTOSTART|操作ログの自動取得設定について、下記のいずれかで指定します。<br>「on」       : ログの自動取得を実行します。<br>「off」      : ログの自動取得を実行しません。<br>「select」   : マクロの起動前にダイアログが表示され、ログの自動取得を実行するかしないかを選択できます。<br>※値の指定に大文字、小文字の区別はありません。|
 |LOG_TIMESTAMP|操作ログの自動取得を実行する場合、タイムスタンプを書き込むかどうかを指定できます。<br>「on」       : ログの行頭にタイムスタンプを書き込みます。<br>「off」      : ログの行頭にタイムスタンプを書き込みません。<br>※値の指定に大文字、小文字の区別はありません。|

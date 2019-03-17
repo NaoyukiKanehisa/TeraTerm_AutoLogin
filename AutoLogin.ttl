@@ -448,12 +448,7 @@ endif
 ;;-------------------------------------------------------------------------------------------------
 ;; コマンドラインの引数でコマンドリストが指定されている場合、値を上書きする
 if paramcnt >= 2 then
-    strcompare params[2] ""
-    if result = 0 then
-        COMMAND_FILE = ""
-    else
-        COMMAND_FILE = params[2]
-    endif
+    COMMAND_FILE = params[2]
 endif
 
 ;;コマンドリストファイルが見つからない場合、エラー表示して終了する
