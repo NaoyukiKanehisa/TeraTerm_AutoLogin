@@ -33,6 +33,12 @@ TTPMACROPATHCHK = Fso.FileExists(TTPMACROPATH)
 TTLFILEPATH = Fso.GetAbsolutePathName(TTLFILEPATH)
 TTLFILEPATHCHK = Fso.FileExists(TTLFILEPATH)
 
+Function Quit()
+    Set WshShell = Nothing
+    Set Fso = Nothing
+    WScript.Quit
+End Function
+
 If TTPMACROPATHCHK = True Then
     If TTLFILEPATHCHK = True Then
         COMMAND = "cmd.exe /c, """ & TTPMACROPATH & """ """ & TTLFILEPATH & """"
@@ -52,7 +58,7 @@ If TTPMACROPATHCHK = True Then
             COMMANDLISTPATHCHK = Fso.FileExists(COMMANDLIST)
             If COMMANDLISTPATHCHK = False Then
                 MsgBox "コマンドリストが見つかりません。" & vbCrLf &  vbCrLf & COMMANDLIST,4112,"エラー"
-                WScript.Quit
+                Quit()
             End If
         End If
 
@@ -60,11 +66,10 @@ If TTPMACROPATHCHK = True Then
         WshShell.Run(COMMAND),0,True
     Else
         MsgBox "Tera Termマクロが見つかりません。" & vbCrLf &  vbCrLf & TTLFILEPATH,4112,"エラー"
-        WScript.Quit
+        Quit()
     End If
 Else
     MsgBox "Tera Termディレクトリ、またはttpmacro.exeが見つかりません。" & vbCrLf &  vbCrLf & TTPMACROPATH,4112,"エラー"
 End If
 
-Set WshShell = Nothing
-Set Fso = Nothing
+Quit()
